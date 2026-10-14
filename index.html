@@ -234,6 +234,10 @@ h1,h2,h3,p{margin:0}
 .fld input:focus-visible{outline:3px solid var(--teal-text);outline-offset:1px}
 .err{background:var(--awas-soft);color:var(--awas-ink);padding:10px 12px;border-radius:10px;font-size:12.5px;font-weight:600}
 
+.gbtn{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);min-height:46px;width:100%}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;font-weight:700}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
 /* responsive */
 @media (min-width:600px){
   .sensor-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -389,6 +393,7 @@ const T = {
     al_steps:'LANGKAH KESELAMATAN:', al_s1:'Amankan barang-barang berharga', al_s2:'Evakuasi lansia dan anak-anak', al_s3:'Ikuti jalur hijau evakuasi',
     al_ok:'SAYA MENGERTI', close:'Tutup', al_banner:'Peringatan dini aktif', al_banner_sub:'Lihat langkah keselamatan',
     login_sub:'Pantau gelombang Desa Kunjir', login_email:'Email / Username', login_pw:'Kata sandi', login_btn:'MASUK',
+    login_or:'atau', login_google:'Masuk dengan Google', login_g_setup:'Login Google belum dikonfigurasi. Isi GOOGLE_CLIENT_ID di kode.', login_g_denied:'Akun Google ini tidak punya akses.', login_g_fail:'Gagal memuat login Google. Coba lagi.',
     login_err:'Email atau kata sandi salah.', login_empty:'Isi email dan kata sandi.', logout:'Keluar'
   },
   en: {
@@ -425,6 +430,7 @@ const T = {
     al_steps:'SAFETY STEPS:', al_s1:'Secure your valuables', al_s2:'Evacuate the elderly and children', al_s3:'Follow the green evacuation route',
     al_ok:'I UNDERSTAND', close:'Close', al_banner:'Early warning active', al_banner_sub:'View safety steps',
     login_sub:'Monitor Kunjir Village waves', login_email:'Email / Username', login_pw:'Password', login_btn:'SIGN IN',
+    login_or:'or', login_google:'Sign in with Google', login_g_setup:'Google sign-in is not configured. Set GOOGLE_CLIENT_ID in the code.', login_g_denied:'This Google account does not have access.', login_g_fail:'Could not load Google sign-in. Try again.',
     login_err:'Wrong email or password.', login_empty:'Enter your email and password.', logout:'Sign out'
   }
 };
@@ -447,13 +453,53 @@ const AUTH = {
   verify: async (email, pw) => (email.toLowerCase() === 'admin123' && pw === 'admin123') ? { email: 'admin123', name: 'Admin', role: 'admin' } : null,
   async login(email, pw) {
     const u = await this.verify(email, pw);
-    if (u) { try { localStorage.setItem(this.KEY, JSON.stringify({ ...u, at: Date.now() })); } catch (e) {} }
+    if (u) this.save(u);
     return u;
   },
+  save(u) { try { localStorage.setItem(this.KEY, JSON.stringify({ ...u, at: Date.now() })); } catch (e) {} },
   current() { try { const s = JSON.parse(localStorage.getItem(this.KEY) || 'null'); return s && s.email ? s : null; } catch (e) { return null; } },
   logout() { try { localStorage.removeItem(this.KEY); } catch (e) {} }
 };
 state.user = AUTH.current();
+
+/* ---------- Login Google (Google Identity Services) ----------
+   Cara aktifkan: Google Cloud Console > APIs & Services > Credentials > Create OAuth client ID (Web application).
+   Tambahkan domain tempat dashboard ini di-host ke "Authorized JavaScript origins", lalu tempel Client ID di bawah.
+   CATATAN: token Google di sini hanya dibaca di browser (cukup untuk dashboard sederhana). Untuk keamanan penuh,
+   verifikasi token di backend/Firebase sebelum memberi akses ke data sensor. */
+const GOOGLE_CLIENT_ID = '';  /* contoh: '1234567890-abc123.apps.googleusercontent.com' */
+const ALLOWED_EMAILS = [];    /* kosong = semua akun Google boleh masuk; isi email admin untuk membatasi, mis. ['admin@gmail.com'] */
+function jwtPayload(tok) {
+  const b = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(decodeURIComponent(atob(b).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+}
+function onGoogle(resp) {
+  try {
+    const p = jwtPayload(resp.credential);
+    const allow = ALLOWED_EMAILS.map(e => e.toLowerCase());
+    const ok = p.aud === GOOGLE_CLIENT_ID && p.email_verified && p.exp * 1000 > Date.now() && (!allow.length || allow.includes(String(p.email).toLowerCase()));
+    if (!ok) { state.loginErr = 'login_g_denied'; render(); return; }
+    const u = { email: p.email, name: p.name || p.email, picture: p.picture || '', role: 'google' };
+    AUTH.save(u); state.user = u; state.loginErr = ''; fromHash(); render(); window.scrollTo(0, 0);
+  } catch (e) { state.loginErr = 'login_g_fail'; render(); }
+}
+let gsiLoading = null;
+function loadGsi() {
+  if (window.google && google.accounts && google.accounts.id) return Promise.resolve();
+  if (gsiLoading) return gsiLoading;
+  gsiLoading = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = res; s.onerror = () => { gsiLoading = null; rej(); }; document.head.appendChild(s); });
+  return gsiLoading;
+}
+const gFallback = () => `<button type="button" class="btn gbtn" data-act="google"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.600 2.600 10.800l7.900-6.100z"/><path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.500-5.800c-2.100 1.400-4.800 2.300-8.400 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg>${t('login_google')}</button>`;
+async function initGoogle() {
+  const box = $('#gBtn'); if (!box || !GOOGLE_CLIENT_ID) return;
+  try {
+    await loadGsi();
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogle, auto_select: false });
+    const b = $('#gBtn');
+    if (b) { b.innerHTML = ''; google.accounts.id.renderButton(b, { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: Math.min(320, b.clientWidth || 320), locale: state.lang }); }
+  } catch (e) { const b = $('#gBtn'); if (b) b.innerHTML = gFallback(); }
+}
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -731,8 +777,11 @@ function renderLogin() {
     <label class="fld"><span class="lbl">${t('login_email')}</span><input id="lgEmail" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc}"></label>
     <label class="fld"><span class="lbl">${t('login_pw')}</span><input id="lgPw" name="password" type="password" autocomplete="current-password"></label>
     <button type="button" class="btn primary" data-act="login">${t('login_btn')}</button>
+    <div class="or">${t('login_or')}</div>
+    ${GOOGLE_CLIENT_ID ? '<div id="gBtn" style="display:flex;justify-content:center;min-height:44px"></div>' : gFallback()}
     <div style="display:flex;justify-content:center">${langSeg()}</div></div>`;
   r.hidden = false;
+  initGoogle();
   if (state.loginErr) requestAnimationFrame(() => { const p = $('#lgPw'); if (p) p.focus(); });
 }
 
@@ -774,7 +823,8 @@ document.addEventListener('click', e => {
   else if (a === 'ack') { state.acked = true; state.sheet = null; render(); }
   else if (a === 'notif') { state.notif = !state.notif; render(); }
   else if (a === 'login') doLogin();
-  else if (a === 'logout') { AUTH.logout(); state.user = null; state.acked = false; state.loginErr = ''; render(); }
+  else if (a === 'google') { state.loginErr = GOOGLE_CLIENT_ID ? 'login_g_fail' : 'login_g_setup'; render(); }
+  else if (a === 'logout') { try { if (window.google && google.accounts) google.accounts.id.disableAutoSelect(); } catch (x) {} AUTH.logout(); state.user = null; state.acked = false; state.loginErr = ''; render(); }
   else if (a === 'test') { state[v] = true; render(); setTimeout(() => { state[v] = false; render(); }, 3000); }
 });
 document.addEventListener('keydown', e => {
