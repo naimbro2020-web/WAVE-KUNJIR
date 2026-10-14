@@ -1,0 +1,816 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>WAVE System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: mobile = app dengan bottom-nav (seperti mockup); >=960px = sidebar + dashboard multi-kolom */
+:root{
+  --bg:#E9F0F3; --surface:#FFFFFF; --surface-2:#F1F6F8; --ink:#10303B; --muted:#587680; --line:#D7E3E8;
+  --brand:#0B5D70; --on-brand:#FFFFFF; --teal-text:#0B5D70; --accent:#F26A1B;
+  --ai-bg:#DCEBEF; --sheet-bg:linear-gradient(180deg,#FDECEC 0%,#F1F7F9 46%);
+  --shadow:0 1px 2px rgba(16,48,59,.06),0 8px 20px rgba(16,48,59,.06);
+  --aman:#1E9E6A; --aman-soft:#DDF3E8; --aman-ink:#0C6A46;
+  --waspada:#D9A400; --waspada-soft:#FBF0CC; --waspada-ink:#6F5000;
+  --siaga:#F26A1B; --siaga-soft:#FDE8DA; --siaga-ink:#B24508;
+  --awas:#D93636; --awas-soft:#FBDFDF; --awas-ink:#A31F1F;
+  --font-display:'Sora','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --gutter-l:max(16px,env(safe-area-inset-left,0px));
+  --gutter-r:max(16px,env(safe-area-inset-right,0px));
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#08171C; --surface:#0F2730; --surface-2:#143240; --ink:#E4F0F3; --muted:#8CA9B2; --line:#1E414D;
+    --brand:#177E96; --on-brand:#FFFFFF; --teal-text:#5DC7DD; --accent:#FF8545;
+    --ai-bg:#123340; --sheet-bg:linear-gradient(180deg,#2A171B 0%,#0F2730 46%);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px rgba(0,0,0,.3);
+    --aman:#35C48A; --aman-soft:#11382A; --aman-ink:#6FDDAA;
+    --waspada:#F0BE2E; --waspada-soft:#3A3010; --waspada-ink:#F4CE62;
+    --siaga:#FF8545; --siaga-soft:#3D2216; --siaga-ink:#FFA070;
+    --awas:#FF6B6B; --awas-soft:#3F1A1E; --awas-ink:#FF9494;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08171C; --surface:#0F2730; --surface-2:#143240; --ink:#E4F0F3; --muted:#8CA9B2; --line:#1E414D;
+  --brand:#177E96; --on-brand:#FFFFFF; --teal-text:#5DC7DD; --accent:#FF8545;
+  --ai-bg:#123340; --sheet-bg:linear-gradient(180deg,#2A171B 0%,#0F2730 46%);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px rgba(0,0,0,.3);
+  --aman:#35C48A; --aman-soft:#11382A; --aman-ink:#6FDDAA;
+  --waspada:#F0BE2E; --waspada-soft:#3A3010; --waspada-ink:#F4CE62;
+  --siaga:#FF8545; --siaga-soft:#3D2216; --siaga-ink:#FFA070;
+  --awas:#FF6B6B; --awas-soft:#3F1A1E; --awas-ink:#FF9494;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;min-height:100%;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible+.chk-box{outline:3px solid var(--teal-text);outline-offset:2px;border-radius:10px}
+svg.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+h1,h2,h3,p{margin:0}
+.tone-ok{color:var(--aman-ink)} .tone-warn{color:var(--siaga-ink)} .tone-info{color:var(--teal-text)} .tone-crit{color:var(--awas-ink)}
+[data-lv="aman"]{--lv:var(--aman);--lv-soft:var(--aman-soft);--lv-ink:var(--aman-ink)}
+[data-lv="waspada"]{--lv:var(--waspada);--lv-soft:var(--waspada-soft);--lv-ink:var(--waspada-ink)}
+[data-lv="siaga"]{--lv:var(--siaga);--lv-soft:var(--siaga-soft);--lv-ink:var(--siaga-ink)}
+[data-lv="awas"]{--lv:var(--awas);--lv-soft:var(--awas-soft);--lv-ink:var(--awas-ink)}
+
+/* shell */
+.app{min-height:100%;display:block}
+.side{display:none}
+.main{min-width:0}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid transparent}
+.top-in{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;padding:10px var(--gutter-r) 10px var(--gutter-l);max-width:720px;margin:0 auto}
+.icon-btn{position:relative;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--surface);box-shadow:var(--shadow);color:var(--teal-text);font-size:20px}
+.icon-btn .dot{position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--surface)}
+.ttl{text-align:center;min-width:0}
+.ttl b{display:block;font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.04em;color:var(--teal-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.top-extra{display:none}
+.page{padding:6px var(--gutter-r) 112px var(--gutter-l);max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:6px var(--gutter-r) calc(8px + env(safe-area-inset-bottom,0px)) var(--gutter-l);display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.tb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:12px;color:var(--muted);font-size:10.5px;font-weight:600;min-width:0}
+.tb .ic{font-size:21px}
+.tb span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb.on{color:var(--teal-text)}
+.tb.on .ic{stroke-width:2.4}
+
+/* common */
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow)}
+.sec{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--teal-text)}
+.sec .ic{font-size:18px}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--lv-soft);color:var(--lv-ink);font-size:11px;font-weight:800;letter-spacing:.06em}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lv)}
+.bar{height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--tone,var(--brand))}
+.bar.tone-ok{--tone:var(--aman)} .bar.tone-warn{--tone:var(--siaga)} .bar.tone-info{--tone:var(--brand)} .bar.tone-crit{--tone:var(--awas)} .bar.tone-lv{--tone:var(--lv)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:12px;font-weight:700;font-size:13px}
+.btn.primary{background:var(--brand);color:var(--on-brand);min-height:50px;font-family:var(--font-display);letter-spacing:.06em;font-size:14px}
+.btn.ghost{background:var(--surface-2);color:var(--teal-text)}
+.btn.warn{background:var(--siaga-soft);color:var(--siaga-ink)}
+.seg{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.seg-b{flex:1;min-height:36px;padding:0 12px;border-radius:9px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg-b.on{background:var(--surface);color:var(--teal-text);box-shadow:var(--shadow)}
+
+/* home */
+.home-top{display:grid;gap:12px}
+.status{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;width:100%;padding:24px 16px 22px;border-radius:16px;background:var(--lv-soft);border:3px solid var(--lv)}
+.status .eyebrow{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--lv-ink)}
+.status .lvl{font-family:var(--font-display);font-weight:800;font-size:clamp(2.7rem,11vw,3.7rem);line-height:1.05;color:var(--lv);letter-spacing:.01em}
+.status .lvd{font-weight:600;font-size:15px;max-width:26ch;text-wrap:balance}
+.aside-card{padding:16px;display:flex;flex-direction:column;gap:12px}
+.rk-num{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:2px 0 8px}
+.rk-num b{font-family:var(--font-display);font-size:30px;font-weight:800;line-height:1}
+.rk-num span.of{color:var(--muted);font-weight:600}
+.rk-num .pill{margin-left:auto}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px}
+.btn-row .btn{flex:1 1 140px}
+.updated{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:500;justify-content:center}
+.updated .ic{font-size:14px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--aman);box-shadow:0 0 0 0 var(--aman);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.sensor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.scard{padding:16px 10px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;min-width:0}
+.scard .ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--teal-text);font-size:19px;margin-bottom:6px}
+.slabel{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.sval{font-family:var(--font-display);font-weight:800;font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums}
+.sval small{font-size:14px;font-weight:700;margin-left:2px}
+.sst{font-size:12px;font-weight:700}
+.ssrc{margin-top:4px;font-size:10px;color:var(--muted);letter-spacing:.04em}
+
+/* monitoring */
+.ai{background:var(--ai-bg);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.ai h3{display:flex;align-items:center;gap:8px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-text);font-weight:800}
+.ai p{font-size:13.5px;font-weight:500;border-left:3px solid var(--awas);padding-left:10px}
+.charts{display:grid;gap:14px}
+.chart{padding:16px 14px 10px}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+.ch-head .big{font-family:var(--font-display);font-weight:800;font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:7px;font-size:11.5px;font-weight:800;background:var(--surface-2);white-space:nowrap}
+.badge.tone-warn{background:var(--siaga-soft)} .badge.tone-ok{background:var(--aman-soft)} .badge.tone-info{background:var(--ai-bg)}
+.chart-el{width:100%;min-height:176px}
+.chart-el svg{display:block;width:100%;height:auto;overflow:visible}
+.c-grid{stroke:var(--line);stroke-width:1}
+.c-txt{fill:var(--muted);font-size:10px;font-weight:600;font-family:var(--font-body)}
+.c-txt.now{fill:var(--ink);font-weight:800}
+.c-line{fill:none;stroke:var(--brand);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.c-dot{fill:var(--brand);stroke:var(--surface);stroke-width:3}
+.c-anom{stroke:var(--awas);stroke-width:1.5;stroke-dasharray:3 3}
+.c-bdg{fill:var(--awas)}
+.c-bdg-t{fill:#fff;font-size:9px;font-weight:800;letter-spacing:.04em;font-family:var(--font-body)}
+
+/* risk */
+.risk-wrap{display:grid;gap:14px}
+.gauge-card{padding:22px 16px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.gauge{position:relative;width:min(240px,70vw);aspect-ratio:1}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.g-track{fill:none;stroke:var(--surface-2);stroke-width:16}
+.g-arc{fill:none;stroke:var(--lv);stroke-width:16;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.g-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.g-mid b{font-family:var(--font-display);font-size:clamp(46px,16vw,60px);font-weight:800;line-height:1}
+.g-mid span.of{color:var(--muted);font-weight:600;font-size:13px}
+.gauge-card p{max-width:34ch;color:var(--muted);font-size:13.5px}
+.factors{padding:16px;display:flex;flex-direction:column;gap:14px}
+.factor{display:flex;flex-direction:column;gap:7px;padding:12px;border-radius:12px;background:var(--surface-2)}
+.f-row{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.f-row span{font-weight:600}
+.f-row b{text-align:right}
+.factor .bar{background:var(--line)}
+
+/* reports */
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stat{padding:14px;display:flex;flex-direction:column;gap:4px}
+.stat b{font-family:var(--font-display);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat b small{font-size:12px;font-weight:700;margin-left:2px;color:var(--muted)}
+.log{padding:6px 16px;display:flex;flex-direction:column}
+.ev{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.ev .ico{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--lv-soft);color:var(--lv-ink);font-size:18px}
+.ev b{display:block;font-size:13.5px}
+.ev small{display:flex;flex-wrap:wrap;gap:6px 10px;color:var(--muted);font-size:12px;margin-top:2px}
+.note{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.note .ic{font-size:14px}
+
+/* profile */
+.prof-grid{display:grid;gap:14px}
+.hd-card{padding:16px;display:flex;flex-direction:column;gap:12px}
+.hd-id{display:flex;gap:12px;align-items:center}
+.hd-id .ico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--brand);color:var(--on-brand);font-size:24px}
+.hd-id b{font-family:var(--font-display);font-size:16px;display:block}
+.hd-id small{color:var(--muted);display:flex;align-items:center;gap:4px;font-size:12.5px}
+.kv{display:grid;gap:8px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding-top:8px;border-top:1px solid var(--line)}
+.kv span{color:var(--muted)}
+.kv b{text-align:right}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--teal-text);font-size:17px}
+.row b{display:block;font-size:13.5px}
+.row small{display:block;color:var(--muted);font-size:12px}
+.on-tag{font-size:11px;font-weight:800;color:var(--aman-ink);background:var(--aman-soft);padding:3px 9px;border-radius:99px}
+.on-tag.act{color:var(--siaga-ink);background:var(--siaga-soft)}
+.set{padding:16px;display:flex;flex-direction:column;gap:14px}
+.set-row{display:flex;flex-direction:column;gap:8px}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:600;font-size:13.5px}
+.tg{position:relative;width:46px;height:26px;border-radius:99px;background:var(--line);transition:background .2s;flex:none}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tg[aria-checked="true"]{background:var(--brand)}
+.tg[aria-checked="true"]::after{transform:translateX(20px)}
+.emg{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-radius:14px;background:var(--surface-2);color:var(--teal-text);font-weight:700;font-size:13px;text-decoration:none;width:100%}
+.emg span{display:flex;align-items:center;gap:8px;min-width:0}
+.emg b{font-family:var(--font-display);font-size:16px;color:var(--ink)}
+
+/* sheets */
+.sheet-root{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,22,28,.55);padding-top:env(safe-area-inset-top,0px)}
+.sheet{width:100%;max-width:520px;max-height:100%;overflow-y:auto;background:var(--sheet-bg);background-color:var(--surface);border-radius:24px 24px 0 0;padding:20px var(--gutter-r) calc(20px + env(safe-area-inset-bottom,0px)) var(--gutter-l);display:flex;flex-direction:column;gap:16px;animation:rise .28s ease-out}
+@keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.sh-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sh-warn{display:flex;align-items:center;gap:8px;color:var(--awas-ink);font-weight:800;letter-spacing:.06em;font-size:13px}
+.sh-warn .ic{font-size:20px}
+.live{font-size:10px;font-weight:800;letter-spacing:.1em;padding:3px 9px;border-radius:99px;background:var(--awas-soft);color:var(--awas-ink)}
+.sheet h2{font-family:var(--font-display);font-weight:800;font-size:26px;text-align:center;letter-spacing:.02em}
+.sh-msg{padding:16px;text-align:center;font-weight:500;font-size:14.5px;line-height:1.55}
+.sh-sub{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--teal-text)}
+.checks{display:flex;flex-direction:column;gap:10px}
+.chk{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);cursor:pointer;font-weight:600;font-size:14px}
+.chk input{position:absolute;opacity:0;width:1px;height:1px}
+.chk-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);display:grid;place-items:center;flex:none;color:transparent;font-size:15px}
+.chk input:checked+.chk-box{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.chk input:checked~span.t{text-decoration:line-through;color:var(--muted)}
+.menu-card{padding:4px 0;display:flex;flex-direction:column;gap:16px}
+
+/* login */
+.login-root{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px var(--gutter-r) 24px var(--gutter-l);background:var(--bg);overflow-y:auto}
+.login{width:100%;max-width:400px;padding:28px 22px;display:flex;flex-direction:column;gap:18px}
+.brand-l{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.brand-l i{width:56px;height:56px;border-radius:18px;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-size:30px;font-style:normal}
+.brand-l h1{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--teal-text);letter-spacing:.03em}
+.brand-l .sub{color:var(--muted);font-size:13px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld input{height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);padding:0 14px;font:inherit;font-size:15px;width:100%}
+.fld input:focus-visible{outline:3px solid var(--teal-text);outline-offset:1px}
+.err{background:var(--awas-soft);color:var(--awas-ink);padding:10px 12px;border-radius:10px;font-size:12.5px;font-weight:600}
+
+/* responsive */
+@media (min-width:600px){
+  .sensor-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sheet-root{align-items:center}
+  .sheet{border-radius:24px}
+}
+@media (min-width:960px){
+  .app{display:grid;grid-template-columns:260px minmax(0,1fr)}
+  .tabbar{display:none}
+  .side{display:flex;flex-direction:column;gap:20px;position:sticky;top:env(safe-area-inset-top,0px);align-self:start;max-height:100vh;overflow-y:auto;padding:24px 16px 24px var(--gutter-l);background:var(--surface);border-right:1px solid var(--line);min-height:100vh}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.04em;color:var(--teal-text)}
+  .brand i{width:38px;height:38px;border-radius:12px;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-size:22px;font-style:normal}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nv{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;font-weight:700;font-size:14px;color:var(--muted);text-align:left}
+  .nv .ic{font-size:20px}
+  .nv:hover{background:var(--surface-2)}
+  .nv.on{background:var(--ai-bg);color:var(--teal-text)}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:14px}
+  .stn{padding:14px;border-radius:14px;background:var(--lv-soft);display:flex;flex-direction:column;gap:6px}
+  .stn small{color:var(--muted);font-weight:600}
+  .stn b{font-family:var(--font-display);font-size:22px;color:var(--lv-ink)}
+  .top-in{grid-template-columns:minmax(0,1fr) auto;max-width:1120px;padding-top:20px;padding-bottom:12px}
+  .top-in .menu-b{display:none}
+  .ttl{text-align:left;order:-1}
+  .ttl b{font-size:22px;letter-spacing:.02em}
+  .ttl small{font-size:12.5px}
+  .top-extra{display:flex;align-items:center;gap:12px}
+  .top-extra .seg{padding:3px}
+  .top-extra .seg-b{min-height:32px;padding:0 12px}
+  .page{max-width:1120px;padding-bottom:48px}
+  .home-top{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:stretch}
+  .aside-card{justify-content:center}
+  .sensor-grid{gap:14px}
+  .charts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .risk-wrap{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start}
+  .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .prof-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <aside class="side" id="side"></aside>
+  <div class="main">
+    <header class="top" id="top"></header>
+    <main class="page" id="view"></main>
+  </div>
+  <nav class="tabbar" id="tabbar" aria-label="Navigasi utama"></nav>
+</div>
+<div class="sheet-root" id="sheetRoot" hidden></div>
+<div class="login-root" id="loginRoot" hidden></div>
+
+<script>
+/* =====================================================================
+   LAPISAN DATA
+   Semua angka di UI dibaca dari objek DATA. Sekarang berisi angka tetap.
+   Untuk menyambung ke backend, kirim pembacaan terbaru dengan bentuk yang
+   sama (atau sebagian saja) lewat:  WAVE.update({ sensors:{...}, risk:{...} })
+   Contoh: setInterval(() => fetch('/api/latest').then(r => r.json()).then(WAVE.update), 10000)
+   atau dari WebSocket/MQTT: ws.onmessage = e => WAVE.update(JSON.parse(e.data))
+   ===================================================================== */
+const EMERGENCY = { number: '112' }; /* ganti dengan nomor posko Desa Kunjir */
+
+const DATA = {
+  updatedAt: Date.now() - 2 * 60 * 1000,
+  station: { id: '01', place: 'Desa Kunjir' },
+  risk: {
+    score: 68,
+    factors: {
+      wave:      { pct: 78, tone: 'warn' },
+      pressure:  { pct: 45, tone: 'info', extra: '-4 hPa' },
+      wind:      { pct: 62, tone: 'warn', extra: '15 m/s' },
+      vibration: { pct: 12, tone: 'ok',   extra: '0.02 g' }
+    }
+  },
+  ai: { wavePct: 65, windowMin: 30 },
+  sensors: {
+    waveHeight:  { value: 1.5,  unit: 'm',   status: 'rising',  src: 'JSN-SR04T' },
+    windSpeed:   { value: 15,   unit: 'm/s', status: 'strong',  src: 'Anemometer' },
+    temperature: { value: 29,   unit: '°C',  status: 'normal',  src: 'BME280' },
+    humidity:    { value: 78,   unit: '%',   status: 'humid',   src: 'BME280' },
+    pressure:    { value: 1012, unit: 'hPa', status: 'falling', src: 'BME280' },
+    vibration:   { value: 0.02, unit: 'g',   status: 'calm',    src: 'MPU6500 · SW-420' }
+  },
+  charts: {
+    wave: {
+      value: '1.5m', badge: { text: '+65%', dir: 'up', tone: 'warn' }, domain: [0, 2], ticks: [0, 1, 2],
+      anomaly: { day: 18, week: 6, month: 29 },
+      day:   [0.62,0.58,0.55,0.6,0.66,0.7,0.68,0.63,0.6,0.57,0.55,0.58,0.62,0.6,0.54,0.5,0.52,0.56,0.62,0.78,0.98,1.2,1.38,1.46,1.5],
+      week:  [0.9,1.0,0.8,0.85,0.95,0.9,1.5],
+      month: [0.8,0.9,1.0,0.85,0.7,0.8,0.95,1.1,1.0,0.9,0.8,0.75,0.85,1.0,1.15,1.05,0.9,0.8,0.7,0.85,0.95,1.05,1.0,0.9,0.85,0.95,1.0,1.05,1.0,1.5]
+    },
+    pressure: {
+      value: '1012hPa', badge: { text: '-4 hPa', dir: 'down', tone: 'info' }, domain: [1008, 1020], ticks: [1008, 1014, 1020],
+      day:   [1015.8,1016,1016.2,1016.1,1015.9,1015.8,1016,1016.3,1016.2,1016.1,1016,1015.9,1015.8,1015.9,1016,1015.8,1015.7,1015.6,1015.5,1015,1014.2,1013.4,1012.8,1012.3,1012],
+      week:  [1014,1013,1015,1016,1014,1016,1012],
+      month: [1014,1015,1013,1012.5,1013.5,1015,1016,1015,1014,1013,1013.5,1014.5,1015.5,1016,1015.5,1014.5,1014,1013.5,1014,1015,1016,1016.5,1015.5,1015,1014.5,1015,1016,1016.5,1016,1012]
+    },
+    wind: {
+      value: '15m/s', badge: { text: 'Kencang', textEn: 'Strong', dir: 'up', tone: 'warn' }, domain: [0, 20], ticks: [0, 10, 20],
+      day:   [8,7.5,7,6.8,7.2,8,8.5,9,9.5,9,8.5,8,7.8,8.2,8.8,9.2,9,8.8,9,10.5,12,13.5,14.5,14.8,15],
+      week:  [9,11,8,10,12,9,15],
+      month: [8,9,10,9,8,7,8.5,10,11,10,9,8.5,9,10,11.5,10.5,9.5,9,8,9,10,11,10.5,9.5,9,10,11,12,12.5,15]
+    },
+    vibration: {
+      value: '0.02g', badge: { text: 'Tenang', textEn: 'Calm', dir: null, tone: 'ok' }, domain: [0, 0.1], ticks: [0, 0.05, 0.1],
+      day:   [0.02,0.018,0.02,0.022,0.02,0.019,0.021,0.02,0.018,0.02,0.023,0.02,0.019,0.02,0.021,0.02,0.018,0.02,0.022,0.02,0.019,0.02,0.021,0.02,0.02],
+      week:  [0.02,0.03,0.02,0.025,0.02,0.022,0.02],
+      month: [0.02,0.02,0.025,0.02,0.018,0.02,0.03,0.022,0.02,0.02,0.019,0.02,0.021,0.02,0.045,0.03,0.022,0.02,0.02,0.019,0.02,0.021,0.02,0.02,0.022,0.02,0.019,0.02,0.021,0.02]
+    }
+  },
+  events: [
+    { agoMin: 20,        lv: 'siaga',   icon: 'wave',     id: 'Anomali gelombang: naik 65% dalam 30 menit', en: 'Wave anomaly: up 65% in 30 minutes', src: 'JSN-SR04T' },
+    { agoMin: 95,        lv: 'waspada', icon: 'gauge',    id: 'Tekanan udara turun 4 hPa dalam 3 jam',       en: 'Air pressure dropped 4 hPa in 3 hours', src: 'BME280' },
+    { agoMin: 60 * 9,    lv: 'aman',    icon: 'activity', id: 'Getaran terdeteksi, di bawah ambang batas',   en: 'Vibration detected, below threshold', src: 'SW-420' },
+    { agoMin: 60 * 24 * 4, lv: 'aman',  icon: 'siren',    id: 'Uji sirene berhasil',        en: 'Siren test passed', src: 'Relay' }
+  ]
+};
+
+/* ============================ TEKS (ID / EN) ============================ */
+const T = {
+  id: {
+    nav_home:'Beranda', nav_monitoring:'Monitoring', nav_risk:'Risiko', nav_reports:'Laporan', nav_profile:'Profil',
+    ttl_monitoring:'Detail Monitoring', ttl_risk:'WAVE SYSTEM AI', ttl_reports:'Laporan', ttl_profile:'Profil',
+    station:'Stasiun', menu:'Pengaturan', notif_btn:'Peringatan dini',
+    status_now:'STATUS SAAT INI', lv_aman:'AMAN', lv_waspada:'WASPADA', lv_siaga:'SIAGA', lv_awas:'AWAS',
+    lvd_aman:'Kondisi Normal - Tetap Pantau', lvd_waspada:'Risiko Sedang - Tetap Waspada',
+    lvd_siaga:'Risiko Tinggi - Harap Waspada & Bersiap', lvd_awas:'Risiko Sangat Tinggi - Segera Evakuasi',
+    updated:'Terakhir diperbarui: ', just_now:'baru saja', min_ago:'{n} menit yang lalu', hr_ago:'{n} jam yang lalu',
+    realtime:'Kondisi Real-time', risk_index:'Indeks Risiko AI', see_detail:'Lihat rincian', see_alert:'Peringatan dini',
+    s_waveHeight:'TINGGI GELOMBANG', s_windSpeed:'KEC. ANGIN', s_temperature:'SUHU UDARA', s_humidity:'KELEMBAPAN', s_pressure:'TEKANAN', s_vibration:'GETARAN',
+    st_rising:'Meningkat', st_falling:'Menurun', st_strong:'Kencang', st_normal:'Normal', st_humid:'Lembap', st_calm:'Tenang',
+    r_day:'Harian', r_week:'Mingguan', r_month:'Bulanan', now:'SEKARANG',
+    ai_title:'Analisis pola lingkungan (AI)', ai_head:'Deteksi Anomali:',
+    ai_text:'AI mendeteksi kenaikan gelombang {p}% dalam {m} menit terakhir. Pola ini serupa dengan aktivitas sebelum tercatatnya gelombang ekstrem.',
+    c_wave:'TINGGI GELOMBANG (M)', c_pressure:'TEKANAN UDARA (HPA)', c_wind:'KECEPATAN ANGIN (M/S)', c_vibration:'GETARAN (G)',
+    anom:'ANOMALI AI',
+    risk_title:'Indeks Risiko', risk_desc:'Sistem mendeteksi anomali pada pola gelombang dan tekanan udara.', rt_data:'Data Real-time',
+    f_wave:'Pola Gelombang', f_pressure:'Penurunan Tekanan', f_wind:'Kecepatan Angin', f_vibration:'Getaran',
+    w_high:'Tinggi', w_mid:'Sedang', w_low:'Rendah', anomaly_of:'Anomali {w}',
+    rep_sum:'Ringkasan 24 jam', rep_wave:'Gelombang tertinggi', rep_wind:'Angin terkencang', rep_press:'Tekanan terendah', rep_warn:'Peringatan',
+    rep_log:'Riwayat peringatan', rep_note:'Contoh data, belum terhubung ke sensor.',
+    pf_station:'Stasiun pemantau', pf_conn:'Konektivitas', pf_power:'Daya', pf_loc:'Lokasi',
+    pf_conn_v:'ESP32 + modem 4G A7670C', pf_power_v:'Panel surya 20 Wp + aki 12V 12Ah',
+    pf_sensors:'Sensor terpasang', online:'Online',
+    sn_jsn:'Tinggi gelombang (ultrasonik tahan air)', sn_anemo:'Kecepatan angin (output pulsa)', sn_bme:'Suhu, kelembapan, tekanan udara',
+    sn_mpu:'Orientasi dan getaran', sn_sw:'Sensor getaran', sn_oled:'Tampilan lokal (I2C)',
+    pf_alarm:'Alarm lokal', al_siren:'Sirene 12V', al_test:'Uji', al_active:'Aktif', al_idle:'Siaga',
+    al_note:'Simulasi tampilan, belum mengirim perintah ke relay.',
+    pf_settings:'Pengaturan', lang:'Bahasa', theme:'Tema', th_system:'Otomatis', th_light:'Terang', th_dark:'Gelap', notif:'Notifikasi peringatan',
+    emg:'Nomor Darurat Desa Kunjir',
+    al_title:'PERINGATAN DINI', al_msg:'Terjadi perubahan tinggi permukaan laut yang tidak wajar. Jauhi bibir pantai dan bersiap menuju jalur evakuasi.',
+    al_steps:'LANGKAH KESELAMATAN:', al_s1:'Amankan barang-barang berharga', al_s2:'Evakuasi lansia dan anak-anak', al_s3:'Ikuti jalur hijau evakuasi',
+    al_ok:'SAYA MENGERTI', close:'Tutup', al_banner:'Peringatan dini aktif', al_banner_sub:'Lihat langkah keselamatan',
+    login_sub:'Pantau gelombang Desa Kunjir', login_email:'Email / Username', login_pw:'Kata sandi', login_btn:'MASUK',
+    login_err:'Email atau kata sandi salah.', login_empty:'Isi email dan kata sandi.', logout:'Keluar'
+  },
+  en: {
+    nav_home:'Home', nav_monitoring:'Monitoring', nav_risk:'Risk', nav_reports:'Reports', nav_profile:'Profile',
+    ttl_monitoring:'Monitoring Detail', ttl_risk:'WAVE SYSTEM AI', ttl_reports:'Reports', ttl_profile:'Profile',
+    station:'Station', menu:'Settings', notif_btn:'Early warning',
+    status_now:'CURRENT STATUS', lv_aman:'SAFE', lv_waspada:'ADVISORY', lv_siaga:'WATCH', lv_awas:'WARNING',
+    lvd_aman:'Normal Conditions - Keep Monitoring', lvd_waspada:'Moderate Risk - Stay Alert',
+    lvd_siaga:'High Risk - Stay Alert & Get Ready', lvd_awas:'Very High Risk - Evacuate Now',
+    updated:'Last updated: ', just_now:'just now', min_ago:'{n} min ago', hr_ago:'{n} h ago',
+    realtime:'Real-time Conditions', risk_index:'AI Risk Index', see_detail:'View details', see_alert:'Early warning',
+    s_waveHeight:'WAVE HEIGHT', s_windSpeed:'WIND SPEED', s_temperature:'AIR TEMP', s_humidity:'HUMIDITY', s_pressure:'PRESSURE', s_vibration:'VIBRATION',
+    st_rising:'Rising', st_falling:'Falling', st_strong:'Strong', st_normal:'Normal', st_humid:'Humid', st_calm:'Calm',
+    r_day:'Daily', r_week:'Weekly', r_month:'Monthly', now:'NOW',
+    ai_title:'Environment pattern analysis (AI)', ai_head:'Anomaly detected:',
+    ai_text:'AI detected a {p}% rise in wave height over the last {m} minutes. This pattern resembles activity recorded before extreme waves.',
+    c_wave:'WAVE HEIGHT (M)', c_pressure:'AIR PRESSURE (HPA)', c_wind:'WIND SPEED (M/S)', c_vibration:'VIBRATION (G)',
+    anom:'AI ANOMALY',
+    risk_title:'Risk Index', risk_desc:'The system detected anomalies in wave patterns and air pressure.', rt_data:'Real-time Data',
+    f_wave:'Wave Patterns', f_pressure:'Pressure Drop', f_wind:'Wind Speed', f_vibration:'Vibration',
+    w_high:'High', w_mid:'Moderate', w_low:'Low', anomaly_of:'{w} anomaly',
+    rep_sum:'Last 24 hours', rep_wave:'Peak wave height', rep_wind:'Peak wind speed', rep_press:'Lowest pressure', rep_warn:'Warnings',
+    rep_log:'Warning history', rep_note:'Sample data, not connected to sensors yet.',
+    pf_station:'Monitoring station', pf_conn:'Connectivity', pf_power:'Power', pf_loc:'Location',
+    pf_conn_v:'ESP32 + A7670C 4G modem', pf_power_v:'20 Wp solar panel + 12V 12Ah battery',
+    pf_sensors:'Installed sensors', online:'Online',
+    sn_jsn:'Wave height (waterproof ultrasonic)', sn_anemo:'Wind speed (pulse output)', sn_bme:'Temperature, humidity, air pressure',
+    sn_mpu:'Orientation and vibration', sn_sw:'Vibration sensor', sn_oled:'Local display (I2C)',
+    pf_alarm:'Local alarm', al_siren:'12V siren', al_test:'Test', al_active:'Active', al_idle:'Idle',
+    al_note:'Display simulation, no command is sent to the relay yet.',
+    pf_settings:'Settings', lang:'Language', theme:'Theme', th_system:'Auto', th_light:'Light', th_dark:'Dark', notif:'Warning notifications',
+    emg:'Kunjir Village Emergency Number',
+    al_title:'EARLY WARNING', al_msg:'An abnormal change in sea level has occurred. Stay away from the shoreline and get ready to move to the evacuation route.',
+    al_steps:'SAFETY STEPS:', al_s1:'Secure your valuables', al_s2:'Evacuate the elderly and children', al_s3:'Follow the green evacuation route',
+    al_ok:'I UNDERSTAND', close:'Close', al_banner:'Early warning active', al_banner_sub:'View safety steps',
+    login_sub:'Monitor Kunjir Village waves', login_email:'Email / Username', login_pw:'Password', login_btn:'SIGN IN',
+    login_err:'Wrong email or password.', login_empty:'Enter your email and password.', logout:'Sign out'
+  }
+};
+
+/* ============================ STATE ============================ */
+const state = { lang: 'id', theme: 'system', view: 'home', range: 'day', sheet: null, acked: false, checks: [false, false, false], notif: true, siren: false, user: null, loginErr: '', loginEmail: '' };
+const VIEWS = ['home', 'monitoring', 'risk', 'reports', 'profile'];
+const HASH = { home: 'beranda', monitoring: 'monitoring', risk: 'risiko', reports: 'laporan', profile: 'profil' };
+const LEVELS = ['aman', 'waspada', 'siaga', 'awas'];
+
+try { const l = localStorage.getItem('wave.lang'), th = localStorage.getItem('wave.theme'); if (l === 'id' || l === 'en') state.lang = l; if (['system', 'light', 'dark'].includes(th)) state.theme = th; } catch (e) {}
+
+/* ============================ LOGIN / SESI ============================
+   SEMENTARA (demo): akun tetap admin123 / admin123.
+   Ganti AUTH.verify dengan panggilan ke backend (mis. Firebase Auth / Google Sign-In)
+   yang mengembalikan { email, name, role } kalau valid, atau null kalau salah.
+   Sandi TIDAK disimpan di browser; yang disimpan cuma sesi (email + nama), jadi tidak perlu login ulang. */
+const AUTH = {
+  KEY: 'wave.session',
+  verify: async (email, pw) => (email.toLowerCase() === 'admin123' && pw === 'admin123') ? { email: 'admin123', name: 'Admin', role: 'admin' } : null,
+  async login(email, pw) {
+    const u = await this.verify(email, pw);
+    if (u) { try { localStorage.setItem(this.KEY, JSON.stringify({ ...u, at: Date.now() })); } catch (e) {} }
+    return u;
+  },
+  current() { try { const s = JSON.parse(localStorage.getItem(this.KEY) || 'null'); return s && s.email ? s : null; } catch (e) { return null; } },
+  logout() { try { localStorage.removeItem(this.KEY); } catch (e) {} }
+};
+state.user = AUTH.current();
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const t = (k, v) => { let s = (T[state.lang][k] ?? k); if (v) for (const x in v) s = s.replace('{' + x + '}', v[x]); return s; };
+const loc = () => state.lang === 'id' ? 'id-ID' : 'en-GB';
+
+/* ============================ IKON ============================ */
+const P = {
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  chart:'<path d="M5 20V11M12 20V4M19 20v-6"/>',
+  doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/>',
+  wave:'<path d="M2 8c2 0 3-2 5-2s3 2 5 2 3-2 5-2 3 2 5 2"/><path d="M2 15c2 0 3-2 5-2s3 2 5 2 3-2 5-2 3 2 5 2"/>',
+  wind:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  thermo:'<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>',
+  drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  gauge:'<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/>',
+  activity:'<path d="M3 12h3l2-6 4 12 3-9 2 3h4"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  check:'<path d="M5 12l5 5 9-10"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7.5h.01"/>',
+  up:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
+  siren:'<path d="M7 18v-6a5 5 0 0 1 10 0v6"/><path d="M5 21h14M12 3v2M4.5 7l1.5 1M19.5 7L18 8"/>',
+  bulb:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.700 1-2.500A6 6 0 0 0 12 3z"/>',
+  pin:'<path d="M12 21s7-6.200 7-11a7 7 0 0 0-14 0c0 4.800 7 11 7 11z"/><circle cx="12" cy="10" r="2.500"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  radio:'<path d="M5 12.500a10 10 0 0 1 14 0M8 15.500a6 6 0 0 1 8 0M12 19h.01"/>',
+  spark:'<path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800z"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  cpu:'<rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M2 12h2M20 12h2M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/>',
+  battery:'<rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 10v4M10 10v4"/>',
+  display:'<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  rot:'<path d="M21 12a9 9 0 1 1-3-6.700"/><path d="M21 4v5h-5"/>',
+  logout:'<path d="M9 21H5V3h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
+};
+const ic = (n, extra = '') => `<svg class="ic ${extra}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || ''}</svg>`;
+const SENSOR_ICON = { waveHeight: 'wave', windSpeed: 'wind', temperature: 'thermo', humidity: 'drop', pressure: 'gauge', vibration: 'activity' };
+const TONE = { rising: 'warn', strong: 'warn', falling: 'warn', normal: 'ok', humid: 'info', calm: 'ok' };
+const NAV_ICON = { home: 'home', monitoring: 'chart', risk: 'shield', reports: 'doc', profile: 'user' };
+
+/* ============================ HELPER ============================ */
+const levelOf = s => s >= 85 ? 'awas' : s >= 55 ? 'siaga' : s >= 30 ? 'waspada' : 'aman';
+const lvIdx = () => LEVELS.indexOf(levelOf(DATA.risk.score));
+function rel() {
+  const m = Math.max(0, Math.floor((Date.now() - DATA.updatedAt) / 60000));
+  if (m < 1) return t('just_now');
+  if (m < 60) return t('min_ago', { n: m });
+  return t('hr_ago', { n: Math.floor(m / 60) });
+}
+const word = p => p >= 70 ? t('w_high') : p >= 35 ? t('w_mid') : t('w_low');
+
+/* ============================ PENGATURAN ============================ */
+const seg = (act, opts, cur) => `<div class="seg" role="group">${opts.map(o => `<button type="button" class="seg-b${o.v === cur ? ' on' : ''}" data-act="${act}" data-v="${o.v}" aria-pressed="${o.v === cur}">${o.l}</button>`).join('')}</div>`;
+const langSeg = () => seg('lang', [{ v: 'id', l: 'ID' }, { v: 'en', l: 'EN' }], state.lang);
+const themeSeg = () => seg('theme', [{ v: 'system', l: t('th_system') }, { v: 'light', l: t('th_light') }, { v: 'dark', l: t('th_dark') }], state.theme);
+function applyTheme() {
+  const r = document.documentElement;
+  if (state.theme === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', state.theme);
+  document.documentElement.lang = state.lang;
+}
+
+/* ============================ SHELL ============================ */
+function renderSide() {
+  const lv = levelOf(DATA.risk.score);
+  $('#side').innerHTML = `
+    <div class="brand"><i>${ic('wave')}</i>WAVE SYSTEM</div>
+    <nav class="nav" aria-label="Navigasi">${VIEWS.map(v => `<button type="button" class="nv${state.view === v ? ' on' : ''}" data-act="nav" data-v="${v}" ${state.view === v ? 'aria-current="page"' : ''}>${ic(NAV_ICON[v])}${t('nav_' + v)}</button>`).join('')}</nav>
+    <div class="side-foot">
+      <div class="stn" data-lv="${lv}"><small>${t('station')} ${DATA.station.id} · ${DATA.station.place}</small><b>${t('lv_' + lv)}</b><span class="js-updated" style="font-size:12px;color:var(--muted)">${rel()}</span></div>
+      <div class="set-row"><span class="lbl">${t('theme')}</span>${themeSeg()}</div>
+    </div>`;
+}
+function renderTop() {
+  const v = state.view;
+  const title = v === 'home' ? 'WAVE SYSTEM' : t('ttl_' + v);
+  const sub = v === 'monitoring' ? `WAVE SYSTEM • ${t('station')} ${DATA.station.id}` : v === 'home' ? '' : `${t('station')} ${DATA.station.id} · ${DATA.station.place}`;
+  const active = lvIdx() >= 2 && !state.acked;
+  $('#top').innerHTML = `<div class="top-in">
+    <button type="button" class="icon-btn menu-b" data-act="menu" aria-label="${t('menu')}">${ic('menu')}</button>
+    <div class="ttl"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</div>
+    <div style="display:flex;align-items:center;gap:12px;justify-content:flex-end">
+      <div class="top-extra">${langSeg()}</div>
+      <button type="button" class="icon-btn" data-act="alert" aria-label="${t('notif_btn')}">${ic('bell')}${active ? '<span class="dot"></span>' : ''}</button>
+    </div></div>`;
+}
+function renderTabbar() {
+  $('#tabbar').innerHTML = VIEWS.map(v => `<button type="button" class="tb${state.view === v ? ' on' : ''}" data-act="nav" data-v="${v}" ${state.view === v ? 'aria-current="page"' : ''}>${ic(NAV_ICON[v])}<span>${t('nav_' + v)}</span></button>`).join('');
+}
+
+/* ============================ HALAMAN ============================ */
+function viewHome() {
+  const lv = levelOf(DATA.risk.score), S = DATA.sensors;
+  const cards = Object.keys(S).map(k => {
+    const s = S[k];
+    return `<article class="card scard"><span class="ico">${ic(SENSOR_ICON[k])}</span><div class="slabel">${t('s_' + k)}</div><div class="sval">${s.value}<small>${s.unit}</small></div><div class="sst tone-${TONE[s.status]}">${t('st_' + s.status)}</div><div class="ssrc">${s.src}</div></article>`;
+  }).join('');
+  return `
+    <div class="home-top" data-lv="${lv}">
+      <button type="button" class="status" data-act="nav" data-v="risk">
+        <span class="eyebrow">${t('status_now')}</span><span class="lvl">${t('lv_' + lv)}</span><span class="lvd">${t('lvd_' + lv)}</span>
+      </button>
+      <div class="card aside-card">
+        <div><span class="lbl">${t('risk_index')}</span>
+          <div class="rk-num"><b>${DATA.risk.score}</b><span class="of">/ 100</span><span class="pill">${t('lv_' + lv)}</span></div>
+          <div class="bar tone-lv" role="img" aria-label="${DATA.risk.score}/100"><i style="width:${DATA.risk.score}%"></i></div></div>
+        <div class="btn-row"><button type="button" class="btn ghost" data-act="nav" data-v="risk">${ic('shield')}${t('see_detail')}</button>
+          ${lvIdx() >= 2 ? `<button type="button" class="btn warn" data-act="alert">${ic('alert')}${t('see_alert')}</button>` : ''}</div>
+      </div>
+    </div>
+    <div class="updated">${ic('clock')}<span>${t('updated')}<b class="js-updated">${rel()}</b></span><i class="live-dot" aria-hidden="true"></i></div>
+    <h2 class="sec">${ic('radio')}${t('realtime')}</h2>
+    <div class="sensor-grid">${cards}</div>`;
+}
+
+function chartCard(key) {
+  const c = DATA.charts[key];
+  const b = c.badge, bt = state.lang === 'en' && b.textEn ? b.textEn : b.text;
+  return `<section class="card chart"><div class="ch-head"><div><div class="lbl">${t('c_' + key)}</div><div class="big">${c.value}</div></div>
+    <span class="badge tone-${b.tone}">${b.dir ? ic(b.dir) : ''}${bt}</span></div>
+    <div class="chart-el" data-key="${key}"></div></section>`;
+}
+function viewMonitoring() {
+  return `
+    ${seg('range', [{ v: 'day', l: t('r_day') }, { v: 'week', l: t('r_week') }, { v: 'month', l: t('r_month') }], state.range)}
+    <section class="ai"><h3>${ic('spark')}${t('ai_title')}</h3>
+      <p><b class="tone-crit">${t('ai_head')}</b> ${t('ai_text', { p: DATA.ai.wavePct, m: DATA.ai.windowMin })}</p></section>
+    <div class="charts">${['wave', 'pressure', 'wind', 'vibration'].map(chartCard).join('')}</div>`;
+}
+
+function viewRisk() {
+  const lv = levelOf(DATA.risk.score), sc = DATA.risk.score, F = DATA.risk.factors, C = 2 * Math.PI * 80;
+  const txt = {
+    wave: t('anomaly_of', { w: word(F.wave.pct) }),
+    pressure: `${word(F.pressure.pct)} (${F.pressure.extra})`,
+    wind: `${word(F.wind.pct)} (${F.wind.extra})`,
+    vibration: `${word(F.vibration.pct)} (${F.vibration.extra})`
+  };
+  const rows = ['wave', 'pressure', 'wind', 'vibration'].map(k => `<div class="factor"><div class="f-row"><span>${t('f_' + k)}</span><b class="tone-${F[k].tone}">${txt[k]}</b></div><div class="bar tone-${F[k].tone}"><i style="width:${F[k].pct}%"></i></div></div>`).join('');
+  return `<div class="risk-wrap" data-lv="${lv}">
+    <section class="card gauge-card">
+      <h2 class="sec" style="color:var(--ink)">${t('risk_title')}</h2>
+      <div class="gauge"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="g-track" cx="100" cy="100" r="80"/><circle class="g-arc" cx="100" cy="100" r="80" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - sc / 100)).toFixed(2)}"/></svg>
+        <div class="g-mid" role="img" aria-label="${t('risk_title')} ${sc}/100"><b>${sc}</b><span class="of">/ 100</span><span class="pill">${t('lv_' + lv)}</span></div></div>
+      <p>${t('risk_desc')}</p>
+    </section>
+    <section class="card factors"><h2 class="sec">${ic('chart')}${t('rt_data')}</h2>${rows}</section></div>`;
+}
+
+function fmtDate(agoMin) {
+  return new Date(DATA.updatedAt - agoMin * 60000 + 2 * 60000).toLocaleString(loc(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+function viewReports() {
+  const S = DATA.sensors, lowP = Math.min(...DATA.charts.pressure.day), hi = Math.max(...DATA.charts.wave.day), wi = Math.max(...DATA.charts.wind.day);
+  const warn = DATA.events.filter(e => e.lv !== 'aman').length;
+  const ev = DATA.events.map(e => `<div class="ev" data-lv="${e.lv}"><span class="ico">${ic(e.icon)}</span><div><b>${e[state.lang]}</b><small><span>${fmtDate(e.agoMin)}</span><span>${e.src}</span><span class="pill">${t('lv_' + e.lv)}</span></small></div></div>`).join('');
+  return `
+    <h2 class="sec">${ic('doc')}${t('rep_sum')}</h2>
+    <div class="stats">
+      <div class="card stat"><span class="lbl">${t('rep_wave')}</span><b>${hi}<small>m</small></b></div>
+      <div class="card stat"><span class="lbl">${t('rep_wind')}</span><b>${wi}<small>m/s</small></b></div>
+      <div class="card stat"><span class="lbl">${t('rep_press')}</span><b>${lowP}<small>hPa</small></b></div>
+      <div class="card stat"><span class="lbl">${t('rep_warn')}</span><b>${warn}</b></div>
+    </div>
+    <h2 class="sec">${ic('bell')}${t('rep_log')}</h2>
+    <section class="card log">${ev}</section>
+    <p class="note">${ic('info')}${t('rep_note')}</p>`;
+}
+
+function viewProfile() {
+  const lv = levelOf(DATA.risk.score);
+  const sensors = [['wave', 'JSN-SR04T', 'sn_jsn'], ['wind', 'Anemometer', 'sn_anemo'], ['thermo', 'BME280', 'sn_bme'], ['rot', 'MPU6500', 'sn_mpu'], ['activity', 'SW-420', 'sn_sw'], ['display', 'OLED 0.96"', 'sn_oled']]
+    .map(s => `<div class="row"><span class="ico">${ic(s[0])}</span><div><b>${s[1]}</b><small>${t(s[2])}</small></div><span class="on-tag">${t('online')}</span></div>`).join('');
+  const alarm = (k, icon, key) => `<div class="row"><span class="ico">${ic(icon)}</span><div><b>${t(key)}</b><small>${state[k] ? t('al_active') : t('al_idle')}</small></div><button type="button" class="btn ghost" data-act="test" data-v="${k}" ${state[k] ? 'disabled' : ''}>${t('al_test')}</button></div>`;
+  return `<div class="prof-grid" data-lv="${lv}">
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <section class="card hd-card"><div class="hd-id"><span class="ico">${ic('cpu')}</span><div><b>${t('station')} ${DATA.station.id}</b><small>${ic('pin')}${DATA.station.place}</small></div></div>
+        <div class="kv"><div><span>${t('pf_conn')}</span><b>${t('pf_conn_v')}</b></div><div><span>${t('pf_power')}</span><b>${t('pf_power_v')}</b></div></div></section>
+      <section class="card hd-card"><h2 class="sec">${ic('radio')}${t('pf_sensors')}</h2><div class="rows">${sensors}</div></section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <section class="card hd-card"><div class="hd-id"><span class="ico">${ic('user')}</span><div><b>${state.user ? state.user.name : ''}</b><small>${state.user ? state.user.email : ''}</small></div></div><button type="button" class="btn ghost" data-act="logout">${ic('logout')}${t('logout')}</button></section>
+      <section class="card hd-card"><h2 class="sec">${ic('siren')}${t('pf_alarm')}</h2><div class="rows">${alarm('siren', 'siren', 'al_siren')}</div><p class="note">${ic('info')}${t('al_note')}</p></section>
+      <section class="card set"><h2 class="sec">${ic('sun')}${t('pf_settings')}</h2>
+        <div class="set-row"><span class="lbl">${t('lang')}</span>${langSeg()}</div>
+        <div class="set-row"><span class="lbl">${t('theme')}</span>${themeSeg()}</div>
+        <div class="switch"><span>${t('notif')}</span><button type="button" class="tg" role="switch" aria-checked="${state.notif}" aria-label="${t('notif')}" data-act="notif"></button></div>
+        ${emergencyLink()}</section>
+    </div></div>`;
+}
+const emergencyLink = () => `<a class="emg" href="tel:${EMERGENCY.number}"><span>${ic('phone')}${t('emg')}</span><b>${EMERGENCY.number}</b></a>`;
+
+/* ============================ SHEET ============================ */
+function renderSheet() {
+  const root = $('#sheetRoot');
+  if (!state.sheet) { root.hidden = true; root.innerHTML = ''; return; }
+  const lv = levelOf(DATA.risk.score);
+  if (state.sheet === 'alert') {
+    const steps = ['al_s1', 'al_s2', 'al_s3'].map((k, i) => `<label class="chk" for="chk${i}"><input type="checkbox" id="chk${i}" data-i="${i}" ${state.checks[i] ? 'checked' : ''}><span class="chk-box">${ic('check')}</span><span class="t">${t(k)}</span></label>`).join('');
+    root.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shT" data-lv="${lv}">
+      <div class="sh-head"><span class="sh-warn" id="shT">${ic('alert')}${t('al_title')}</span><span class="live">LIVE</span></div>
+      <h2>WAVE SYSTEM</h2>
+      <p class="card sh-msg">${t('al_msg')}</p>
+      <div class="sh-sub">${t('al_steps')}</div>
+      <div class="checks">${steps}</div>
+      ${emergencyLink()}
+      <button type="button" class="btn primary" id="ackBtn" data-act="ack">${t('al_ok')}</button></div>`;
+    requestAnimationFrame(() => $('#ackBtn') && $('#ackBtn').focus());
+  } else {
+    root.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shT">
+      <div class="sh-head"><h2 id="shT" style="font-size:20px;text-align:left">${t('menu')}</h2><button type="button" class="icon-btn" data-act="close" aria-label="${t('close')}">${ic('x')}</button></div>
+      <div class="menu-card"><div class="set-row"><span class="lbl">${t('lang')}</span>${langSeg()}</div><div class="set-row"><span class="lbl">${t('theme')}</span>${themeSeg()}</div></div></div>`;
+  }
+  root.hidden = false;
+}
+
+/* ============================ GRAFIK ============================ */
+function smooth(p) {
+  let d = `M${p[0][0].toFixed(1)},${p[0][1].toFixed(1)}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+    d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)},${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)},${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+function xLabels(n) {
+  const r = state.range, base = new Date(DATA.updatedAt), out = [];
+  if (r === 'day') { [0, 6, 12, 18].forEach(h => out.push({ i: h, s: String(h).padStart(2, '0') + ':00' })); out.push({ i: n - 1, s: t('now'), now: true }); }
+  else if (r === 'week') { for (let i = 0; i < n; i++) { const d = new Date(base); d.setDate(d.getDate() - (n - 1 - i)); out.push({ i, s: d.toLocaleDateString(loc(), { weekday: 'short' }), now: i === n - 1 }); } }
+  else { [0, 7, 14, 21].forEach(i => { const d = new Date(base); d.setDate(d.getDate() - (n - 1 - i)); out.push({ i, s: d.toLocaleDateString(loc(), { day: 'numeric', month: 'short' }) }); }); out.push({ i: n - 1, s: t('now'), now: true }); }
+  return out;
+}
+function drawChart(el) {
+  const key = el.dataset.key, cfg = DATA.charts[key], vals = cfg[state.range], n = vals.length;
+  const w = Math.max(240, el.clientWidth || 300), h = 176, pl = 38, pr = 14, pt = 14, pb = 28;
+  const [lo, hi] = cfg.domain;
+  const x = i => pl + i * (w - pl - pr) / (n - 1), y = v => pt + (1 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (h - pt - pb);
+  const pts = vals.map((v, i) => [x(i), y(v)]);
+  const line = smooth(pts), yb = h - pb;
+  const fmt = v => (Math.abs(v) >= 100 ? String(Math.round(v)) : String(+v.toFixed(2)));
+  let g = cfg.ticks.map(tk => `<line class="c-grid" x1="${pl}" x2="${w - pr}" y1="${y(tk).toFixed(1)}" y2="${y(tk).toFixed(1)}"/><text class="c-txt" x="${pl - 6}" y="${(y(tk) + 3.5).toFixed(1)}" text-anchor="end">${fmt(tk)}</text>`).join('');
+  const labels = xLabels(n).map((l, k, arr) => {
+    const anchor = l.i === 0 ? 'start' : l.i === n - 1 ? 'end' : 'middle';
+    return `<text class="c-txt${l.now ? ' now' : ''}" x="${x(l.i).toFixed(1)}" y="${h - 8}" text-anchor="${anchor}">${l.s}</text>`;
+  }).join('');
+  let anom = '';
+  const ai = cfg.anomaly && cfg.anomaly[state.range];
+  if (ai != null) {
+    const ax = x(ai), bw = 66, bx = Math.min(w - pr - bw, Math.max(pl, ax - bw / 2));
+    anom = `<line class="c-anom" x1="${ax.toFixed(1)}" x2="${ax.toFixed(1)}" y1="${pt + 14}" y2="${yb}"/><rect class="c-bdg" x="${bx.toFixed(1)}" y="${pt - 8}" width="${bw}" height="18" rx="4"/><text class="c-bdg-t" x="${(bx + bw / 2).toFixed(1)}" y="${pt + 4.5}" text-anchor="middle">${t('anom')}</text>`;
+  }
+  const last = pts[n - 1];
+  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${t('c_' + key)}: ${cfg.value}">
+    <defs><linearGradient id="gr-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--brand);stop-opacity:.28"/><stop offset="1" style="stop-color:var(--brand);stop-opacity:0"/></linearGradient></defs>
+    ${g}<path d="${line}L${last[0].toFixed(1)},${yb}L${pts[0][0].toFixed(1)},${yb}Z" fill="url(#gr-${key})"/>
+    ${anom}<path class="c-line" d="${line}"/><circle class="c-dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="5"/>${labels}</svg>`;
+}
+let rafId = 0;
+function drawCharts() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(() => $$('.chart-el').forEach(drawChart)); }
+if ('ResizeObserver' in window) new ResizeObserver(drawCharts).observe($('#view'));
+window.addEventListener('resize', drawCharts);
+
+/* ============================ LOGIN VIEW ============================ */
+function renderLogin() {
+  const r = $('#loginRoot');
+  const esc = String(state.loginEmail || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  r.innerHTML = `<div class="card login" id="loginForm">
+    <div class="brand-l"><i>${ic('wave')}</i><h1>WAVE SYSTEM</h1><p class="sub">${t('login_sub')}</p></div>
+    ${state.loginErr ? `<div class="err" role="alert">${t(state.loginErr)}</div>` : ''}
+    <label class="fld"><span class="lbl">${t('login_email')}</span><input id="lgEmail" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc}"></label>
+    <label class="fld"><span class="lbl">${t('login_pw')}</span><input id="lgPw" name="password" type="password" autocomplete="current-password"></label>
+    <button type="button" class="btn primary" data-act="login">${t('login_btn')}</button>
+    <div style="display:flex;justify-content:center">${langSeg()}</div></div>`;
+  r.hidden = false;
+  if (state.loginErr) requestAnimationFrame(() => { const p = $('#lgPw'); if (p) p.focus(); });
+}
+
+/* ============================ RENDER ============================ */
+const RENDER = { home: viewHome, monitoring: viewMonitoring, risk: viewRisk, reports: viewReports, profile: viewProfile };
+function render() {
+  applyTheme();
+  $('#app').dataset.lv = levelOf(DATA.risk.score);
+  if (!state.user) { state.sheet = null; $('#app').hidden = true; renderSheet(); renderLogin(); return; }
+  $('#app').hidden = false; $('#loginRoot').hidden = true; $('#loginRoot').innerHTML = '';
+  renderSide(); renderTop(); renderTabbar();
+  $('#view').innerHTML = RENDER[state.view]();
+  renderSheet(); drawCharts();
+}
+function go(v, push = true) {
+  if (!VIEWS.includes(v)) v = 'home';
+  state.view = v;
+  if (push) { try { history.replaceState(null, '', '#' + HASH[v]); } catch (e) {} }
+  render(); window.scrollTo(0, 0);
+}
+function fromHash() {
+  let h = ''; try { h = location.hash.replace('#', ''); } catch (e) {}
+  const v = Object.keys(HASH).find(k => HASH[k] === h);
+  state.view = v || 'home';
+}
+
+/* ============================ EVENT ============================ */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) { if (e.target.id === 'sheetRoot') { state.sheet = null; renderSheet(); } return; }
+  const a = b.dataset.act, v = b.dataset.v;
+  if (a === 'nav') go(v);
+  else if (a === 'range') { state.range = v; render(); }
+  else if (a === 'lang') { state.lang = v; try { localStorage.setItem('wave.lang', v); } catch (x) {} render(); }
+  else if (a === 'theme') { state.theme = v; try { localStorage.setItem('wave.theme', v); } catch (x) {} render(); }
+  else if (a === 'alert') { state.sheet = 'alert'; renderSheet(); }
+  else if (a === 'menu') { state.sheet = 'menu'; renderSheet(); }
+  else if (a === 'close') { state.sheet = null; renderSheet(); }
+  else if (a === 'ack') { state.acked = true; state.sheet = null; render(); }
+  else if (a === 'notif') { state.notif = !state.notif; render(); }
+  else if (a === 'login') doLogin();
+  else if (a === 'logout') { AUTH.logout(); state.user = null; state.acked = false; state.loginErr = ''; render(); }
+  else if (a === 'test') { state[v] = true; render(); setTimeout(() => { state[v] = false; render(); }, 3000); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.closest && e.target.closest('#loginForm') && e.target.tagName === 'INPUT') { e.preventDefault(); doLogin(); }
+});
+async function doLogin() {
+  const email = $('#lgEmail').value.trim(), pw = $('#lgPw').value;
+  state.loginEmail = email;
+  if (!email || !pw) { state.loginErr = 'login_empty'; render(); return; }
+  const u = await AUTH.login(email, pw);
+  if (u) { state.user = u; state.loginErr = ''; state.loginEmail = ''; fromHash(); render(); window.scrollTo(0, 0); }
+  else { state.loginErr = 'login_err'; render(); }
+}
+document.addEventListener('change', e => {
+  const c = e.target.closest('input[data-i]');
+  if (c) state.checks[+c.dataset.i] = c.checked;
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.sheet) { state.sheet = null; renderSheet(); } });
+window.addEventListener('hashchange', () => { fromHash(); render(); });
+setInterval(() => $$('.js-updated').forEach(n => { n.textContent = rel(); }), 20000);
+
+/* ============================ API UNTUK BACKEND ============================ */
+function merge(a, b) { for (const k in b) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object') merge(a[k], b[k]); else a[k] = b[k]; } return a; }
+window.WAVE = {
+  data: DATA,
+  update(patch) {
+    const before = lvIdx();
+    merge(DATA, patch || {});
+    if (!patch || !patch.updatedAt) DATA.updatedAt = Date.now();
+    if (lvIdx() > before) state.acked = false;
+    render();
+  }
+};
+
+fromHash();
+render();
+</script>
+
+</body></html>
